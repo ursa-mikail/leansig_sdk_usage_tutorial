@@ -174,3 +174,68 @@ let ok = Sig::verify(&pk, epoch, &message, &sig);
 ## License
 
 Apache 2.0 — same as the upstream [leanSig](https://github.com/leanEthereum/leanSig) library.
+
+
+# Understanding LeanSig: Post-Quantum Aggregation for Ethereum
+
+LeanSig is a new **post-quantum signature scheme** designed specifically for Ethereum's consensus layer. The core challenge it solves is that existing quantum-resistant signatures (like XMSS) are either too large or cannot be efficiently combined (aggregated), which is a critical requirement for blockchain scalability.
+
+## Comparison of Signature Schemes
+
+| Scheme | Signature Size | Quantum Safe | Aggregation | Key Insight |
+| :--- | :--- | :--- | :--- | :--- |
+| **ECDSA** (Current) | ~64 bytes | No | No | Standard for transactions. |
+| **BLS** (Current) | ~48 bytes | No | Yes (Native) | Used for consensus, but vulnerable to quantum computers. |
+| **XMSS** (NIST Standard) | ~2,500 bytes | Yes | No (Native) | Quantum-safe, but signatures are large and cannot be aggregated. |
+| **LeanSig** (New) | ~3,000 bytes (Proof) | Yes | Yes (Via STARKs) | Combines XMSS security with aggregation. |
+
+## The Core Idea: XMSS + "Incomparable Encoding" + Aggregation
+
+To understand LeanSig, it helps to break down its three main components.
+
+### 1. The Foundation: Stateful XMSS
+
+XMSS (eXtended Merkle Signature Scheme) is a NIST-standardized hash-based signature scheme. Unlike ECDSA or BLS, which rely on mathematical problems that quantum computers could solve, XMSS relies on the security of hash functions, making it resistant to quantum attacks.
+
+However, a standard XMSS signature is large (around 2,500 bytes) and, crucially, **cannot be aggregated**. This means if you have 1,000 signatures, you must store and process 1,000 separate, large signatures.
+
+### 2. The Innovation: Incomparable Encoding
+
+This is the key technique that enables LeanSig. "Incomparable encoding" is a way of structuring the signature data so that individual signatures can be proven to be valid **without revealing the specific XMSS one-time key** that signed them. This property is essential for the next step.
+
+### 3. The Scaling Solution: Aggregation via STARKs
+
+Because signatures are now "incomparable," LeanSig can use a **STARK** (a type of zero-knowledge proof) to prove the validity of **many** signatures at once.
+
+- **Without aggregation:** 1,000 signatures × ~2,500 bytes = ~2.5 MB total data
+- **With LeanSig aggregation:** 1,000 signatures produce a single STARK proof of only **~3,000 bytes**, regardless of how many signatures are aggregated.
+
+This explains the 30 MB per slot figure. An Ethereum slot might need to process hundreds of thousands of signatures. While the *aggregated* proof is small, the underlying signature data must still be collected and processed to generate that proof, leading to a large data footprint for the node generating the aggregate.
+
+## LeanSig in Practice: Performance and Status
+
+While the theory is promising, the practical implementation involves significant trade-offs.
+
+### Performance Metrics
+
+| Metric | Value |
+| :--- | :--- |
+| **Signature Size (Aggregated Proof)** | ~3,000 bytes |
+| **Verification Time** | ~1-2 milliseconds |
+| **Aggregation Data Overhead** | ~30 MB per slot (for `lifetime_2^32` configuration) |
+| **Key Generation (Largest Config)** | ~15 minutes |
+
+### Current Implementation Status
+
+LeanSig is still in the **research and development phase**. A reference implementation exists in Rust, and there is a compatible implementation in the Zig programming language that aims for high performance through parallelism and SIMD optimizations. It is currently considered a prototype for research, not yet ready for production use.
+
+## Summary
+
+In short, LeanSig is an advanced construction that:
+
+1. Uses a **stateful hash-based scheme (XMSS)** as its foundation for quantum security
+2. Applies a novel **"incomparable encoding"** technique to enable aggregation
+3. Achieves massive **aggregation via STARKs**, solving the scalability problem that has plagued quantum-resistant signatures on blockchains
+
+**The trade-off:** On-chain verification becomes incredibly cheap and scalable, but the off-chain computational and data overhead for aggregators becomes significant (like the 30 MB per slot figure).
+
