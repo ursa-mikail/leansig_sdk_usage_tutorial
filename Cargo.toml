@@ -1,0 +1,22 @@
+[package]
+name = "leansig-demo"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.87"
+description = "SDK usage demo for leanSig — post-quantum synchronized hash-based signatures"
+
+[[bin]]
+name = "demo"
+path = "src/bin/demo.rs"
+
+[[bin]]
+name = "multi_epoch"
+path = "src/bin/multi_epoch.rs"
+
+[[bin]]
+name = "bench_quick"
+path = "src/bin/bench_quick.rs"
+
+[dependencies]
+leansig = { git = "https://github.com/leanEthereum/leanSig.git", branch = "main" }
+rand = "0.10"
