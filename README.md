@@ -175,6 +175,7 @@ let ok = Sig::verify(&pk, epoch, &message, &sig);
 
 Apache 2.0 — same as the upstream [leanSig](https://github.com/leanEthereum/leanSig) library.
 
+---
 
 # Understanding LeanSig: Post-Quantum Aggregation for Ethereum
 
